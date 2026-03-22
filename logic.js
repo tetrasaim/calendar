@@ -1,48 +1,51 @@
-// הגדרה על ה-window כדי שקבצים אחרים יראו את זה
-window.HEBREW_MONTHS_MAP = {
-    "ינואר": 1, "פברואר": 2, "מרץ": 3, "אפריל": 4, "מאי": 5, "יוני": 6,
-    "יולי": 7, "אוגוסט": 8, "ספטמבר": 9, "אוקטובר": 10, "נובמבר": 11, "דצמבר": 12
-};
+// הכתובת הישירה ל-logic.js בגיטהאב
+const GITHUB_URL = "https://raw.githubusercontent.com/tetrasaim/calendar/refs/heads/main/logic.js";
 
-window.getAbsoluteDays = function(d, m, y) {
-    let year = y, month = m;
-    if (month <= 2) { year--; month += 12; }
-    return Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + d - 1524.5;
-};
+async function init() {
+    try {
+        // 1. הורדת הקובץ כטקסט פשוט (עוקף חסימת Script)
+        const response = await fetch(GITHUB_URL);
+        const scriptText = await response.text();
 
-window.isLeapYear = function(tetraYear) {
-    const gY = tetraYear - 10000;
-    return (gY % 4 === 0 && gY % 100 !== 0) || (gY % 400 === 0);
-};
+        // 2. הזרקה לתוך ה-Context של התוסף
+        // אנחנו משתמשים ב-eval בתוך ה-Content Script כי כאן זה מותר (בניגוד להזרקה לדף)
+        const script = document.createElement('script');
+        script.textContent = scriptText;
+        
+        // יצירת פונקציה שתריץ את הקוד בסביבה מוגנת
+        const executeLogic = new Function(scriptText + "\n return { HEBREW_MONTHS_MAP, calculateTetraDisplay };");
+        const logic = executeLogic();
+        
+        window.tetraLogic = logic;
+        console.log("Tetraism: Logic loaded successfully from GitHub");
+        
+        // 3. הרצת ההמרה
+        runConversion();
+    } catch (err) {
+        console.error("Tetraism: Failed to load logic from GitHub", err);
+    }
+}
 
-window.calculateTetraDisplay = function(d, m, y, originalMatch) {
-    const epoch = { gD: 1, gM: 1, gY: 0, tY: 10000 };
-    const targetAbs = window.getAbsoluteDays(d, m, y);
-    const syncAbs = window.getAbsoluteDays(epoch.gD, epoch.gM, epoch.gY);
-    let diff = targetAbs - syncAbs;
-    
-    const TETRA_DAYS = ["שני", "שלישי", "רביעי", "חמישי", "שישי", "שביעי", "ראשון"];
-    const dayOfWeekIndex = Math.abs(Math.floor(targetAbs + 0.5)) % 7; 
-    const tetraDayName = TETRA_DAYS[dayOfWeekIndex];
+function runConversion() {
+    if (!window.tetraLogic) return;
 
-    let ty = epoch.tY;
-    if (diff >= 0) {
-        while (true) {
-            let days = window.isLeapYear(ty) ? 366 : 365;
-            if (diff >= days) { diff -= days; ty++; } else break;
+    const dateRegex = /(?:יום\s+[א-ת]+,?\s+)?(\d{1,2})\s+ב?([א-ת]{3,8})\s+(\d{4})/g;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let node;
+
+    while (node = walker.nextNode()) {
+        let text = node.nodeValue;
+        if (dateRegex.test(text)) {
+            node.nodeValue = text.replace(dateRegex, (match, d, mName, y) => {
+                const mNum = window.tetraLogic.HEBREW_MONTHS_MAP[mName];
+                if (mNum) {
+                    // שימוש בפונקציה המקורית מ-logic.js
+                    return window.tetraLogic.calculateTetraDisplay(parseInt(d), mNum, parseInt(y), match);
+                }
+                return match;
+            });
         }
-    } else {
-        while (diff < 0) { ty--; diff += (window.isLeapYear(ty) ? 366 : 365); }
     }
+}
 
-    let tetraDatePart = "";
-    if (diff < 360) {
-        const months = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שביעי", "שמיני", "תשיעי", "עשירי", "אחד-עשר", "שנים-עשר"];
-        tetraDatePart = `${(diff % 30) + 1} ב${months[Math.floor(diff / 30)]}, ${ty}`;
-    } else {
-        const extras = ["אלפא", "בטא", "גמא", "דלתא", "אפסילון", "טלאד"];
-        tetraDatePart = `יום ${extras[diff - 360] || 'אחרית'}, ${ty}`;
-    }
-
-    return `יום ${tetraDayName}, ${tetraDatePart} (${originalMatch})`;
-};
+init();
