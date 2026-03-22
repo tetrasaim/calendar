@@ -3,562 +3,841 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת זמן טטראיסטית - לוח שנה ומחסן</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700;800&display=swap" rel="stylesheet">
+    <title>ממיר זמן טטראיסטי</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Assistant', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            font-family: 'Heebo', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #e0e0e0;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
             padding: 20px;
         }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
+
+        .subtitle {
+            color: #9ca3af;
+            margin-bottom: 24px;
+            font-size: 0.95rem;
         }
-        .calendar-day {
-            aspect-ratio: 1;
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+        }
+
+        .card h2 {
+            font-size: 1.15rem;
+            margin-bottom: 6px;
+            color: #c4b5fd;
+        }
+
+        .card .desc {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            margin-bottom: 16px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            background: transparent;
+            color: #ccc;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: 0.25s;
+        }
+
+        .tab-btn.active {
+            background: rgba(167,139,250,0.25);
+            border-color: #a78bfa;
+            color: #fff;
+        }
+
+        .time-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+            margin-bottom: 12px;
+            direction: ltr;
+        }
+
+        .time-row input {
+            width: 70px;
+            text-align: center;
+            padding: 10px 4px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 1.2rem;
+            font-family: inherit;
+        }
+
+        .time-row span.colon {
+            font-size: 1.4rem;
+            color: #a78bfa;
+        }
+
+        .time-row .label {
+            font-size: 0.7rem;
+            color: #9ca3af;
+            display: block;
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        .time-input-group { display: flex; flex-direction: column; align-items: center; }
+
+        .result-box {
+            background: rgba(167,139,250,0.1);
+            border: 1px solid rgba(167,139,250,0.25);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            font-size: 1.1rem;
+            min-height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.85rem;
-            border-radius: 0.75rem;
+            gap: 8px;
+            color: #c4b5fd;
+        }
+
+        .result-box .label { font-size: 0.85rem; color: #9ca3af; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(167,139,250,0.18);
+            color: #e0d5ff;
             cursor: pointer;
-            transition: all 0.2s;
-        }
-        .calendar-day:hover { background-color: #f1f5f9; color: #4f46e5; font-weight: bold; }
-        .calendar-day.selected { background-color: #4f46e5; color: white; font-weight: bold; }
-        .calendar-day.today { border: 2px solid #4f46e5; color: #4f46e5; font-weight: bold; }
-        .calendar-day.other-month { opacity: 0.2; }
-
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        
-        #nameModal {
-            display: none;
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px);
-            z-index: 100; align-items: center; justify-content: center;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: 0.25s;
         }
 
-        .storage-item {
-            animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        .btn:hover { background: rgba(167,139,250,0.35); }
 
-        #downloadAppBtn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 50;
-            background: white;
-            border: 1px solid #e2e8f0;
-            padding: 12px;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            transition: all 0.2s;
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Calendar Section */
+        .cal-header {
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: #4f46e5;
+            justify-content: space-between;
+            margin-bottom: 12px;
         }
-        #downloadAppBtn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            background: #f8fafc;
+
+        .cal-header button {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #ccc;
+            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: 0.2s;
+        }
+
+        .cal-header button:hover { background: rgba(167,139,250,0.2); }
+
+        .cal-header .month-year {
+            font-size: 1.1rem;
+            color: #c4b5fd;
+        }
+
+        .quick-select {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quick-select select {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-family: inherit;
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-bottom: 4px;
+        }
+
+        .weekdays span {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #a78bfa;
+            padding: 6px 0;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+
+        .day-cell {
+            text-align: center;
+            padding: 10px 4px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            color: #ccc;
+        }
+
+        .day-cell:hover { background: rgba(167,139,250,0.15); }
+        .day-cell.today { background: rgba(96,165,250,0.25); color: #60a5fa; font-weight: 700; }
+        .day-cell.selected { background: rgba(167,139,250,0.35); color: #fff; font-weight: 700; }
+        .day-cell.other-month { color: #555; }
+
+        .selected-date-box {
+            margin-top: 16px;
+        }
+
+        /* Date converter section */
+        .date-inputs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 12px;
+            direction: ltr;
+        }
+
+        .date-inputs .field {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .date-inputs input {
+            width: 80px;
+            text-align: center;
+            padding: 10px 4px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .date-inputs .label {
+            font-size: 0.7rem;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+
+        /* Storage section */
+        .storage-section { margin-top: 8px; }
+
+        .storage-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            margin-bottom: 6px;
+        }
+
+        .storage-item .info { flex: 1; }
+        .storage-item .info .name { font-size: 0.9rem; color: #c4b5fd; }
+        .storage-item .info .date { font-size: 0.8rem; color: #9ca3af; }
+
+        .storage-item .del-btn {
+            background: transparent;
+            border: none;
+            color: #f87171;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 4px 8px;
+        }
+
+        .empty-storage {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+            background: #1e1b4b;
+            border: 1px solid rgba(167,139,250,0.3);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 380px;
+        }
+
+        .modal h3 { color: #c4b5fd; margin-bottom: 12px; }
+
+        .modal input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-family: inherit;
+            margin-bottom: 14px;
+        }
+
+        .modal .modal-btns {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #a78bfa;
+            color: #1e1b4b;
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-weight: 500;
+            opacity: 0;
+            transition: 0.35s;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 500px) {
+            h1 { font-size: 1.3rem; }
+            .time-row input { width: 55px; font-size: 1rem; }
+            .date-inputs input { width: 65px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        <!-- צד ימין: לוח שנה וממיר -->
-        <div class="space-y-4">
-            <div class="glass-panel rounded-[2rem] p-6 border border-slate-200">
-                <div class="flex justify-between items-center mb-4">
-                    <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-100 rounded-full">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                    </button>
-                    <h2 id="calendarTitle" class="text-lg font-black text-slate-800">ינואר 2024</h2>
-                    <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-100 rounded-full">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                    </button>
-                </div>
-                
-                <div class="calendar-grid mb-2 text-center text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                    <div>א</div><div>ב</div><div>ג</div><div>ד</div><div>ה</div><div>ו</div><div>ש</div>
-                </div>
-                <div id="calendarDays" class="calendar-grid"></div>
+<h1>מערכת זמן טטראיסטית - לוח שנה וממיר</h1>
+<p class="subtitle">ינואר 2024</p>
 
-                <!-- בחירת תאריך מהירה -->
-                <div class="mt-4">
-                    <label class="text-[10px] text-slate-400 font-bold mb-1 block uppercase">בחירה מהירה:</label>
-                    <input type="date" id="datePicker" onchange="handlePickerChange(this.value)" class="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl text-lg font-bold transition-all outline-none text-slate-700">
-                </div>
-                
-                <div class="mt-6 pt-6 border-t border-slate-100 space-y-4">
-                    <div class="bg-slate-900 rounded-2xl p-4 text-center">
-                        <div id="selectedDateLabel" class="text-[10px] text-slate-400 uppercase mb-1">תאריך נבחר (טטראיסטי)</div>
-                        <div id="tetraResultDisplay" class="text-xl font-black text-indigo-400">בחר תאריך</div>
-                    </div>
-                    <button id="saveBtn" onclick="openSaveModal()" disabled
-                            class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition disabled:opacity-30">
-                        📥 שמור במחסן עם שם
-                    </button>
-                </div>
-            </div>
+<div class="container">
+
+    <!-- ===== Calendar Card ===== -->
+    <div class="card">
+        <h2>📅 לוח שנה</h2>
+        <div class="cal-header">
+            <button id="prevMonth">◀</button>
+            <span class="month-year" id="calMonthYear"></span>
+            <button id="nextMonth">▶</button>
         </div>
+        <div class="quick-select">
+            <label style="color:#9ca3af;font-size:0.85rem;">בחירה מהירה:</label>
+            <select id="quickMonth"></select>
+            <select id="quickYear"></select>
+        </div>
+        <div class="weekdays" id="weekdays">
+            <span>א</span><span>ב</span><span>ג</span><span>ד</span><span>ה</span><span>ו</span><span>ש</span>
+        </div>
+        <div class="days-grid" id="daysGrid"></div>
 
-        <!-- צד שמאל: ממירים + מחסן תאריכים -->
-        <div class="space-y-4 flex flex-col h-full">
-
-            <!-- ממיר שעה -->
-            <div class="glass-panel rounded-[2rem] p-6 border border-slate-200">
-                <h3 class="text-lg font-black text-slate-800 mb-1">🕐 ממיר שעות</h3>
-                <p class="text-[10px] text-slate-400 uppercase font-bold mb-4">מערכת טטראיסטית: 10 שעות · 100 דקות · 100 שניות</p>
-
-                <!-- כרטיסיות -->
-                <div class="flex bg-slate-100 rounded-2xl p-1 mb-4">
-                    <button onclick="setTimeTab('toTetra')" id="tabToTetra" class="flex-1 py-2 rounded-xl text-sm font-bold transition-all bg-white text-indigo-600 shadow-sm">רגיל → טטרה</button>
-                    <button onclick="setTimeTab('toGreg')" id="tabToGreg" class="flex-1 py-2 rounded-xl text-sm font-bold transition-all text-slate-400">טטרה → רגיל</button>
-                </div>
-
-                <!-- טופס: רגיל לטטרה (גרגוריאני קלט) -->
-                <div id="formToTetra">
-                    <div class="flex gap-2 items-center mb-3">
-                        <div class="flex-1">
-                            <label class="text-[10px] text-slate-400 font-bold block mb-1">שעה (0-23)</label>
-                            <input id="gregHour" type="number" min="0" max="23" placeholder="00" oninput="convertGregToTetra()"
-                                class="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl text-lg font-bold text-center outline-none transition-all">
-                        </div>
-                        <span class="text-slate-300 font-bold mt-5">:</span>
-                        <div class="flex-1">
-                            <label class="text-[10px] text-slate-400 font-bold block mb-1">דקות (0-59)</label>
-                            <input id="gregMin" type="number" min="0" max="59" placeholder="00" oninput="convertGregToTetra()"
-                                class="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl text-lg font-bold text-center outline-none transition-all">
-                        </div>
-                        <span class="text-slate-300 font-bold mt-5">:</span>
-                        <div class="flex-1">
-                            <label class="text-[10px] text-slate-400 font-bold block mb-1">שניות (0-59)</label>
-                            <input id="gregSec" type="number" min="0" max="59" placeholder="00" oninput="convertGregToTetra()"
-                                class="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl text-lg font-bold text-center outline-none transition-all">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- טופס: טטרה לרגיל (טטרה קלט) -->
-                <div id="formToGreg" class="hidden">
-                    <div class="flex gap-2 items-center mb-3">
-                        <div class="flex-1">
-                            <label class="text-[10px] text-slate-400 font-bold block mb-1">שעה (0-9)</label>
-                            <input id="tetraHour" type="number" min="0" max="9" placeholder="00" oninput="convertTetraToGreg()"
-                                class="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl text-lg font-bold text-center outline-none transition-all">
-                        </div>
-                        <span class="text-slate-300 font-bold mt-5">:</span>
-                        <div class="flex-1">
-                            <label class="text-[10px] text-slate-400 font-bold block mb-1">דקות (0-99)</label>
-                            <input id="tetraMin" type="number" min="0" max="99" placeholder="00" oninput="convertTetraToGreg()"
-                                class="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl text-lg font-bold text-center outline-none transition-all">
-                        </div>
-                        <span class="text-slate-300 font-bold mt-5">:</span>
-                        <div class="flex-1">
-                            <label class="text-[10px] text-slate-400 font-bold block mb-1">שניות (0-99)</label>
-                            <input id="tetraSec" type="number" min="0" max="99" placeholder="00" oninput="convertTetraToGreg()"
-                                class="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl text-lg font-bold text-center outline-none transition-all">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- תוצאה שעה -->
-                <div class="bg-slate-900 rounded-2xl p-4 text-center">
-                    <div id="timeResultLabel" class="text-[10px] text-slate-400 uppercase mb-1">שעה טטראיסטית</div>
-                    <div id="timeResult" class="text-xl font-black text-indigo-400">הכנס שעה</div>
-                </div>
-
-                <!-- שעה עכשיו -->
-                <button onclick="useCurrentTime()" class="mt-3 w-full py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm hover:bg-indigo-50 hover:text-indigo-600 transition">
-                    ⏱ השתמש בשעה הנוכחית
-                </button>
+        <div class="selected-date-box">
+            <div class="result-box" id="selectedDateResult">
+                <span class="label">תאריך נבחר (טטראיסטי)</span>
+                <span id="selectedDateText">בחר תאריך</span>
             </div>
-
-            <!-- ממיר תאריך טטרה ← גרגוריאני -->
-            <div class="glass-panel rounded-[2rem] p-6 border border-slate-200">
-                <h3 class="text-lg font-black text-slate-800 mb-1">📅 ממיר תאריך טטרה → רגיל</h3>
-                <p class="text-[10px] text-slate-400 uppercase font-bold mb-4">הכנס תאריך טטראיסטי וקבל את המקבילה הגרגוריאנית</p>
-
-                <div class="flex gap-2 mb-3">
-                    <div class="flex-1">
-                        <label class="text-[10px] text-slate-400 font-bold block mb-1">יום (1-30)</label>
-                        <input id="tDateDay" type="number" min="1" max="30" placeholder="1" oninput="convertTetraDateToGreg()"
-                            class="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl text-lg font-bold text-center outline-none transition-all">
-                    </div>
-                    <div class="flex-1">
-                        <label class="text-[10px] text-slate-400 font-bold block mb-1">חודש (1-12)</label>
-                        <input id="tDateMonth" type="number" min="1" max="12" placeholder="1" oninput="convertTetraDateToGreg()"
-                            class="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl text-lg font-bold text-center outline-none transition-all">
-                    </div>
-                    <div class="flex-1">
-                        <label class="text-[10px] text-slate-400 font-bold block mb-1">שנה</label>
-                        <input id="tDateYear" type="number" placeholder="10000" oninput="convertTetraDateToGreg()"
-                            class="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl text-lg font-bold text-center outline-none transition-all">
-                    </div>
-                </div>
-
-                <div class="bg-slate-900 rounded-2xl p-4 text-center">
-                    <div class="text-[10px] text-slate-400 uppercase mb-1">תאריך גרגוריאני</div>
-                    <div id="dateConvertResult" class="text-xl font-black text-indigo-400">הכנס תאריך</div>
-                </div>
-            </div>
-
-            <div class="glass-panel rounded-[2rem] p-6 border border-slate-200 flex-1 flex flex-col overflow-hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-black text-slate-800">מחסן תאריכים</h3>
-                    <button onclick="clearStorage()" class="text-xs text-red-500 hover:underline">מחק הכל</button>
-                </div>
-                <div id="storageList" class="space-y-3 overflow-y-auto flex-1 pr-2">
-                </div>
+            <div class="btn-row">
+                <button class="btn" id="saveSelectedBtn">📥 שמור במחסן עם שם</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal לשאילת שם -->
-    <div id="nameModal">
-        <div class="bg-white rounded-[2rem] p-8 w-80 shadow-2xl space-y-4 text-center mx-4">
-            <div class="space-y-2">
-                <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+    <!-- ===== Time Converter Card ===== -->
+    <div class="card">
+        <h2>🕐 ממיר שעות</h2>
+        <p class="desc">מערכת טטראיסטית: 10 שעות · 100 דקות · 100 שניות</p>
+
+        <div class="tabs">
+            <button class="tab-btn active" id="tabGregToTetra">רגיל → טטרה</button>
+            <button class="tab-btn" id="tabTetraToGreg">טטרה → רגיל</button>
+        </div>
+
+        <!-- Greg to Tetra -->
+        <div id="panelGregToTetra">
+            <div class="time-row">
+                <div class="time-input-group">
+                    <input type="number" id="gregH" min="0" max="23" placeholder="0">
+                    <span class="label">שעה (0-23)</span>
                 </div>
-                <h3 class="text-xl font-black text-slate-800">מתן שם לתאריך</h3>
-                <p class="text-slate-500 text-xs">איך תרצה לתייג את התאריך השמור?</p>
+                <span class="colon">:</span>
+                <div class="time-input-group">
+                    <input type="number" id="gregM" min="0" max="59" placeholder="0">
+                    <span class="label">דקות (0-59)</span>
+                </div>
+                <span class="colon">:</span>
+                <div class="time-input-group">
+                    <input type="number" id="gregS" min="0" max="59" placeholder="0">
+                    <span class="label">שניות (0-59)</span>
+                </div>
             </div>
-            <input id="saveNameInput" type="text" placeholder="למשל: יום הולדת שלי" 
-                   class="w-full p-4 bg-slate-100 border-none rounded-2xl outline-none text-center font-bold text-slate-700 focus:ring-2 ring-indigo-500 transition">
-            <div class="flex flex-col gap-2 pt-2">
-                <button onclick="confirmSave()" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition">שמור</button>
-                <button onclick="confirmSave(true)" class="w-full py-3 bg-slate-100 text-slate-500 rounded-xl font-bold hover:bg-slate-200 transition">שמור ללא שם</button>
-                <button onclick="closeModal()" class="w-full py-2 text-slate-400 text-xs hover:underline mt-2">ביטול</button>
+            <div class="result-box" id="gregToTetraResult">
+                <span class="label">שעה טטראיסטית</span>
+                <span id="gregToTetraText">הכנס שעה</span>
+            </div>
+            <div class="btn-row">
+                <button class="btn" id="useCurrentTimeGreg">⏱ השתמש בשעה הנוכחית</button>
+            </div>
+        </div>
+
+        <!-- Tetra to Greg -->
+        <div id="panelTetraToGreg" style="display:none;">
+            <div class="time-row">
+                <div class="time-input-group">
+                    <input type="number" id="tetraH" min="0" max="9" placeholder="0">
+                    <span class="label">שעה (0-9)</span>
+                </div>
+                <span class="colon">:</span>
+                <div class="time-input-group">
+                    <input type="number" id="tetraM" min="0" max="99" placeholder="0">
+                    <span class="label">דקות (0-99)</span>
+                </div>
+                <span class="colon">:</span>
+                <div class="time-input-group">
+                    <input type="number" id="tetraS" min="0" max="99" placeholder="0">
+                    <span class="label">שניות (0-99)</span>
+                </div>
+            </div>
+            <div class="result-box" id="tetraToGregResult">
+                <span class="label">שעה רגילה</span>
+                <span id="tetraToGregText">הכנס שעה</span>
             </div>
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-sm font-bold opacity-0 transition-opacity pointer-events-none z-[200]">
-        הועתק!
+    <!-- ===== Date Converter Card ===== -->
+    <div class="card">
+        <h2>📅 ממיר תאריך טטרה → רגיל</h2>
+        <p class="desc">הכנס תאריך טטראיסטי וקבל את המקבילה הגרגוריאנית</p>
+        <div class="date-inputs">
+            <div class="field">
+                <input type="number" id="tetraDay" min="1" max="30" placeholder="1">
+                <span class="label">יום (1-30)</span>
+            </div>
+            <div class="field">
+                <input type="number" id="tetraMonth" min="1" max="12" placeholder="1">
+                <span class="label">חודש (1-12)</span>
+            </div>
+            <div class="field">
+                <input type="number" id="tetraYear" placeholder="12024">
+                <span class="label">שנה</span>
+            </div>
+        </div>
+        <div class="result-box" id="dateConvertResult">
+            <span class="label">תאריך גרגוריאני</span>
+            <span id="dateConvertText">הכנס תאריך</span>
+        </div>
     </div>
 
-    <script src="../logic.js"></script>
-    <script>
-        const CONFIG = {
-            epoch: { gY: 0, gM: 1, gD: 1, tY: 10000, tM: 1, tD: 1 },
-            tetraMonths: ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שביעי", "שמיני", "תשיעי", "עשירי", "אחד-עשר", "שנים-עשר"],
-            gregMonths: ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"]
-        };
+    <!-- ===== Storage Card ===== -->
+    <div class="card">
+        <h2>📦 מחסן תאריכים</h2>
+        <div class="btn-row" style="justify-content: flex-end; margin-bottom: 10px;">
+            <button class="btn" id="clearStorageBtn" style="border-color: #f87171; color: #f87171;">מחק הכל</button>
+        </div>
+        <div id="storageList">
+            <div class="empty-storage">המחסן ריק</div>
+        </div>
+    </div>
+</div>
 
-        let currentViewDate = new Date();
-        let selectedDate = null;
-        let selectedTetraStr = "";
-        let savedDates = JSON.parse(localStorage.getItem('saved_tetra_dates_v3') || '[]');
+<!-- Modal -->
+<div class="modal-overlay" id="nameModal">
+    <div class="modal">
+        <h3>מתן שם לתאריך</h3>
+        <p style="font-size:0.85rem;color:#9ca3af;margin-bottom:12px;">איך תרצה לתייג את התאריך השמור?</p>
+        <input type="text" id="nameInput" placeholder="שם...">
+        <div class="modal-btns">
+            <button class="btn" id="modalSave">שמור</button>
+            <button class="btn" id="modalNoName">שמור ללא שם</button>
+            <button class="btn" id="modalCancel" style="border-color:#f87171;color:#f87171;">ביטול</button>
+        </div>
+    </div>
+</div>
 
-        function downloadThisFile() {
-            const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = 'tetra_calendar.html';
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+<!-- Toast -->
+<div class="toast" id="toast">הועתק!</div>
+
+<script>
+/* ====== Load logic.json and initialise ====== */
+let CFG = null;
+
+async function loadConfig() {
+    const res = await fetch('../logic.json');
+    CFG = await res.json();
+    init();
+}
+
+/* ====== Pure helpers derived from logic.json ====== */
+
+function getAbsoluteDays(d, m, y) {
+    const J = CFG.julian;
+    let year = y, month = m;
+    if (month <= 2) { year--; month += 12; }
+    return Math.floor(J.yearMultiplier * (year + J.epochYear))
+         + Math.floor(J.monthMultiplier * (month + 1))
+         + d - J.correction;
+}
+
+function isLeapYear(tetraYear) {
+    const L = CFG.leapYear;
+    const gY = tetraYear - CFG.tetra.yearOffset;
+    return (gY % L.div4 === 0 && gY % L.div100 !== 0) || (gY % L.div400 === 0);
+}
+
+function julianToGregorian(jd) {
+    const J = CFG.julian;
+    const z = Math.floor(jd + 0.5);
+    let a;
+    if (z < J.gregorianCutoff) {
+        a = z;
+    } else {
+        const alpha = Math.floor((z - J.alphaOffset) / J.alphaDivisor);
+        a = z + 1 + alpha - Math.floor(alpha / 4);
+    }
+    const b = a + J.bCorrection;
+    const c = Math.floor((b - J.cOffset) / J.yearMultiplier);
+    const d = Math.floor(J.yearMultiplier * c);
+    const e = Math.floor((b - d) / J.monthMultiplier);
+
+    const day   = b - d - Math.floor(J.monthMultiplier * e);
+    const month = e < 14 ? e - 1 : e - 13;
+    const year  = month > 2 ? c - J.epochYear : c - J.epochYear + 1;
+    return { d: day, m: month, y: year };
+}
+
+function gregSecsToTetra(totalGregSec) {
+    const totalTetra = Math.round(totalGregSec * CFG.tetra.unitsPerDay / CFG.gregorian.secondsPerDay);
+    return {
+        h: Math.floor(totalTetra / (CFG.tetra.minutesPerHour * CFG.tetra.secondsPerMinute)),
+        m: Math.floor((totalTetra % (CFG.tetra.minutesPerHour * CFG.tetra.secondsPerMinute)) / CFG.tetra.secondsPerMinute),
+        s: totalTetra % CFG.tetra.secondsPerMinute
+    };
+}
+
+function tetraUnitsToGreg(totalTetra) {
+    const totalGregSec = Math.round(totalTetra * CFG.gregorian.secondsPerDay / CFG.tetra.unitsPerDay);
+    return {
+        h: Math.floor(totalGregSec / 3600),
+        m: Math.floor((totalGregSec % 3600) / 60),
+        s: totalGregSec % 60
+    };
+}
+
+function pad(n, len = 2) {
+    return String(n).padStart(len, '0');
+}
+
+/* ====== App state ====== */
+let calYear, calMonth;          // current calendar view (Gregorian)
+let selectedDate = null;        // { d, m, y } Gregorian
+let storage = [];               // saved dates
+let pendingDate = null;
+
+/* ====== Initialisation ====== */
+function init() {
+    const now = new Date();
+    calYear  = now.getFullYear();
+    calMonth = now.getMonth() + 1;
+
+    buildQuickSelects();
+    renderCalendar();
+    bindTimeTabs();
+    bindTimeInputs();
+    bindDateConverter();
+    bindStorage();
+}
+
+/* ====== Calendar ====== */
+function buildQuickSelects() {
+    const mSel = document.getElementById('quickMonth');
+    const ySel = document.getElementById('quickYear');
+    const mNames = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    mNames.forEach((n, i) => {
+        const o = document.createElement('option');
+        o.value = i + 1; o.textContent = n;
+        mSel.appendChild(o);
+    });
+    for (let y = 2000; y <= 2100; y++) {
+        const o = document.createElement('option');
+        o.value = y; o.textContent = y;
+        ySel.appendChild(o);
+    }
+    mSel.value = calMonth;
+    ySel.value = calYear;
+    mSel.addEventListener('change', () => { calMonth = +mSel.value; renderCalendar(); });
+    ySel.addEventListener('change', () => { calYear = +ySel.value; renderCalendar(); });
+    document.getElementById('prevMonth').addEventListener('click', () => {
+        calMonth--; if (calMonth < 1) { calMonth = 12; calYear--; }
+        mSel.value = calMonth; ySel.value = calYear; renderCalendar();
+    });
+    document.getElementById('nextMonth').addEventListener('click', () => {
+        calMonth++; if (calMonth > 12) { calMonth = 1; calYear++; }
+        mSel.value = calMonth; ySel.value = calYear; renderCalendar();
+    });
+}
+
+function daysInMonth(m, y) {
+    return new Date(y, m, 0).getDate();
+}
+
+function renderCalendar() {
+    const mNames = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    document.getElementById('calMonthYear').textContent = mNames[calMonth - 1] + ' ' + calYear;
+    const grid = document.getElementById('daysGrid');
+    grid.innerHTML = '';
+    const dim = daysInMonth(calMonth, calYear);
+    const firstDow = new Date(calYear, calMonth - 1, 1).getDay(); // 0=Sun
+    const today = new Date();
+
+    // empty cells before 1st
+    for (let i = 0; i < firstDow; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'day-cell other-month';
+        grid.appendChild(cell);
+    }
+
+    for (let d = 1; d <= dim; d++) {
+        const cell = document.createElement('div');
+        cell.className = 'day-cell';
+        cell.textContent = d;
+        if (d === today.getDate() && calMonth === today.getMonth() + 1 && calYear === today.getFullYear()) {
+            cell.classList.add('today');
         }
-
-        function convertToTetra(date) {
-            const targetAbs = getAbsoluteDays(date.getDate(), date.getMonth() + 1, date.getFullYear());
-            const syncAbs = getAbsoluteDays(CONFIG.epoch.gD, CONFIG.epoch.gM, CONFIG.epoch.gY);
-            let diff = (targetAbs - syncAbs) + ((CONFIG.epoch.tM - 1) * 30) + (CONFIG.epoch.tD - 1);
-            let y = CONFIG.epoch.tY;
-            if (diff >= 0) {
-                while (true) {
-                    const days = isLeapYear(y) ? 366 : 365;
-                    if (diff >= days) { diff -= days; y++; } else break;
-                }
-            } else {
-                while (diff < 0) { y--; diff += (isLeapYear(y) ? 366 : 365); }
-            }
-            if (diff < 360) {
-                const mIdx = Math.floor(diff / 30);
-                const d = (diff % 30) + 1;
-                return `${d} ב${CONFIG.tetraMonths[mIdx]}, ${y}`;
-            }
-            const extraIdx = diff - 360;
-            const extraNames = ["אלפא", "בטא", "גמא", "דלתא", "אפסילון", "טלאד"];
-            return `יום ${extraNames[extraIdx] || 'אחרית'}, ${y}`;
+        if (selectedDate && d === selectedDate.d && calMonth === selectedDate.m && calYear === selectedDate.y) {
+            cell.classList.add('selected');
         }
+        cell.addEventListener('click', () => selectDate(d, calMonth, calYear));
+        grid.appendChild(cell);
+    }
+}
 
-        function renderCalendar() {
-            const daysContainer = document.getElementById('calendarDays');
-            const title = document.getElementById('calendarTitle');
-            daysContainer.innerHTML = '';
+function selectDate(d, m, y) {
+    selectedDate = { d, m, y };
+    // convert to tetra
+    const jd = getAbsoluteDays(d, m, y);
+    // simple Tetra date = Gregorian date + 10000 years (year only)
+    const tetraY = y + CFG.tetra.yearOffset;
+    document.getElementById('selectedDateText').textContent =
+        pad(d) + '/' + pad(m) + '/' + tetraY + ' (טטראיסטי)';
+    renderCalendar();
+}
 
-            const year = currentViewDate.getFullYear();
-            const month = currentViewDate.getMonth();
-            title.innerText = `${CONFIG.gregMonths[month]} ${year}`;
+/* ====== Time converter ====== */
+function bindTimeTabs() {
+    const tabG = document.getElementById('tabGregToTetra');
+    const tabT = document.getElementById('tabTetraToGreg');
+    const panelG = document.getElementById('panelGregToTetra');
+    const panelT = document.getElementById('panelTetraToGreg');
+    tabG.addEventListener('click', () => { tabG.classList.add('active'); tabT.classList.remove('active'); panelG.style.display=''; panelT.style.display='none'; });
+    tabT.addEventListener('click', () => { tabT.classList.add('active'); tabG.classList.remove('active'); panelT.style.display=''; panelG.style.display='none'; });
+}
 
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const prevMonthDays = new Date(year, month, 0).getDate();
+function bindTimeInputs() {
+    ['gregH','gregM','gregS'].forEach(id => {
+        document.getElementById(id).addEventListener('input', convertGregToTetra);
+    });
+    ['tetraH','tetraM','tetraS'].forEach(id => {
+        document.getElementById(id).addEventListener('input', convertTetraToGreg);
+    });
+    document.getElementById('useCurrentTimeGreg').addEventListener('click', () => {
+        const n = new Date();
+        document.getElementById('gregH').value = n.getHours();
+        document.getElementById('gregM').value = n.getMinutes();
+        document.getElementById('gregS').value = n.getSeconds();
+        convertGregToTetra();
+    });
+}
 
-            for (let i = firstDay - 1; i >= 0; i--) {
-                const dayDiv = document.createElement('div');
-                dayDiv.className = 'calendar-day other-month';
-                dayDiv.innerText = prevMonthDays - i;
-                daysContainer.appendChild(dayDiv);
-            }
+function convertGregToTetra() {
+    const h = +document.getElementById('gregH').value || 0;
+    const m = +document.getElementById('gregM').value || 0;
+    const s = +document.getElementById('gregS').value || 0;
+    const totalSec = h * 3600 + m * 60 + s;
+    const t = gregSecsToTetra(totalSec);
+    document.getElementById('gregToTetraText').textContent = pad(t.h) + ':' + pad(t.m) + ':' + pad(t.s);
+}
 
-            for (let i = 1; i <= daysInMonth; i++) {
-                const dayDiv = document.createElement('div');
-                const isToday = new Date().toDateString() === new Date(year, month, i).toDateString();
-                const isSelected = selectedDate && selectedDate.toDateString() === new Date(year, month, i).toDateString();
-                
-                dayDiv.className = `calendar-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`;
-                dayDiv.innerText = i;
-                dayDiv.onclick = () => selectDate(year, month, i);
-                daysContainer.appendChild(dayDiv);
-            }
-        }
+function convertTetraToGreg() {
+    const h = +document.getElementById('tetraH').value || 0;
+    const m = +document.getElementById('tetraM').value || 0;
+    const s = +document.getElementById('tetraS').value || 0;
+    const totalTetra = h * CFG.tetra.minutesPerHour * CFG.tetra.secondsPerMinute + m * CFG.tetra.secondsPerMinute + s;
+    const g = tetraUnitsToGreg(totalTetra);
+    document.getElementById('tetraToGregText').textContent = pad(g.h) + ':' + pad(g.m) + ':' + pad(g.s);
+}
 
-        function changeMonth(delta) {
-            currentViewDate.setMonth(currentViewDate.getMonth() + delta);
-            renderCalendar();
-        }
+/* ====== Date Converter ====== */
+function bindDateConverter() {
+    ['tetraDay','tetraMonth','tetraYear'].forEach(id => {
+        document.getElementById(id).addEventListener('input', convertTetraDate);
+    });
+}
 
-        // בחירה מה-picker מעדכנת את שאר המערכת
-        function handlePickerChange(val) {
-            if (!val) return;
-            const [y, m, d] = val.split('-').map(Number);
-            selectDate(y, m - 1, d);
-        }
+function convertTetraDate() {
+    const d = +document.getElementById('tetraDay').value;
+    const m = +document.getElementById('tetraMonth').value;
+    const tY = +document.getElementById('tetraYear').value;
+    if (!d || !m || !tY) { document.getElementById('dateConvertText').textContent = 'הכנס תאריך'; return; }
+    const gregY = tY - CFG.tetra.yearOffset;
+    // Tetra date to Gregorian: compute Julian day from the Gregorian equivalent
+    const jd = getAbsoluteDays(d, m, gregY);
+    const g = julianToGregorian(jd);
+    document.getElementById('dateConvertText').textContent = pad(g.d) + '/' + pad(g.m) + '/' + g.y;
+}
 
-        function selectDate(y, m, d) {
-            selectedDate = new Date(y, m, d);
-            currentViewDate = new Date(y, m, 1); // הזזת התצוגה לחודש שנבחר
-            selectedTetraStr = convertToTetra(selectedDate);
-            
-            // עדכון רכיבי UI
-            document.getElementById('tetraResultDisplay').innerText = selectedTetraStr;
-            document.getElementById('saveBtn').disabled = false;
-            
-            // סנכרון ה-Picker
-            const formattedDate = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            document.getElementById('datePicker').value = formattedDate;
-            
-            renderCalendar();
-        }
+/* ====== Storage ====== */
+function bindStorage() {
+    document.getElementById('saveSelectedBtn').addEventListener('click', () => {
+        if (!selectedDate) return;
+        pendingDate = { ...selectedDate };
+        document.getElementById('nameModal').classList.add('show');
+        document.getElementById('nameInput').value = '';
+        document.getElementById('nameInput').focus();
+    });
 
-        function openSaveModal() {
-            document.getElementById('nameModal').style.display = 'flex';
-            document.getElementById('saveNameInput').value = '';
-            document.getElementById('saveNameInput').focus();
-        }
+    document.getElementById('modalSave').addEventListener('click', () => {
+        const name = document.getElementById('nameInput').value.trim();
+        saveToStorage(pendingDate, name || null);
+        document.getElementById('nameModal').classList.remove('show');
+    });
 
-        function closeModal() {
-            document.getElementById('nameModal').style.display = 'none';
-        }
+    document.getElementById('modalNoName').addEventListener('click', () => {
+        saveToStorage(pendingDate, null);
+        document.getElementById('nameModal').classList.remove('show');
+    });
 
-        function confirmSave(noName = false) {
-            if (!selectedDate) return;
+    document.getElementById('modalCancel').addEventListener('click', () => {
+        document.getElementById('nameModal').classList.remove('show');
+    });
 
-            const inputName = document.getElementById('saveNameInput').value.trim();
-            const dateName = noName ? "" : inputName;
-            
-            const entry = {
-                id: Date.now(),
-                name: dateName,
-                gregorian: `${selectedDate.getDate()}/${selectedDate.getMonth()+1}/${selectedDate.getFullYear()}`,
-                tetra: selectedTetraStr
-            };
+    document.getElementById('clearStorageBtn').addEventListener('click', () => {
+        storage = [];
+        renderStorage();
+    });
+}
 
-            savedDates.unshift(entry);
-            localStorage.setItem('saved_tetra_dates_v3', JSON.stringify(savedDates));
+function saveToStorage(date, name) {
+    const tetraY = date.y + CFG.tetra.yearOffset;
+    storage.push({
+        tetra: pad(date.d) + '/' + pad(date.m) + '/' + tetraY,
+        greg: pad(date.d) + '/' + pad(date.m) + '/' + date.y,
+        name: name
+    });
+    renderStorage();
+    showToast('נשמר!');
+}
+
+function renderStorage() {
+    const list = document.getElementById('storageList');
+    if (storage.length === 0) {
+        list.innerHTML = '<div class="empty-storage">המחסן ריק</div>';
+        return;
+    }
+    list.innerHTML = '';
+    storage.forEach((item, i) => {
+        const el = document.createElement('div');
+        el.className = 'storage-item';
+        el.innerHTML = `
+            <div class="info">
+                <div class="name">${item.name || 'ללא שם'}</div>
+                <div class="date">טטרה: ${item.tetra} | גרגוריאני: ${item.greg}</div>
+            </div>
+            <button class="del-btn" data-idx="${i}">✕</button>
+        `;
+        el.querySelector('.del-btn').addEventListener('click', () => {
+            storage.splice(i, 1);
             renderStorage();
-            closeModal();
-            showToast("התאריך נשמר במחסן");
-        }
+        });
+        list.appendChild(el);
+    });
+}
 
-        function renderStorage() {
-            const list = document.getElementById('storageList');
-            list.innerHTML = '';
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+}
 
-            if (savedDates.length === 0) {
-                list.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-12 opacity-20">
-                        <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0a2 2 0 01-2 2H6a2 2 0 01-2-2m16 0l-8 8-8-8"></path></svg>
-                        <span class="mt-2 font-bold">המחסן ריק</span>
-                    </div>
-                `;
-                return;
-            }
-
-            savedDates.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'storage-item p-4 bg-slate-50 border border-slate-100 rounded-2xl flex justify-between items-center group hover:border-indigo-200 transition';
-                div.innerHTML = `
-                    <div class="flex flex-col">
-                        ${item.name ? `<span class="text-[10px] font-black text-indigo-600 uppercase tracking-tight">${item.name}</span>` : ''}
-                        <span class="text-xs text-slate-400">${item.gregorian}</span>
-                        <span class="font-bold text-slate-800">${item.tetra}</span>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="copyToClipboard('${item.tetra}')" class="p-2 bg-white rounded-lg border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-600 transition">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                        </button>
-                        <button onclick="deleteItem(${item.id})" class="p-2 bg-white rounded-lg border border-slate-200 text-slate-300 hover:text-red-500 hover:border-red-500 transition">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-        }
-
-        function deleteItem(id) {
-            savedDates = savedDates.filter(d => d.id !== id);
-            localStorage.setItem('saved_tetra_dates_v3', JSON.stringify(savedDates));
-            renderStorage();
-        }
-
-        function clearStorage() {
-            if (confirm("האם למחוק את כל התאריכים מהמחסן?")) {
-                savedDates = [];
-                localStorage.removeItem('saved_tetra_dates_v3');
-                renderStorage();
-            }
-        }
-
-        function copyToClipboard(text) {
-            const el = document.createElement('textarea');
-            el.value = text;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            showToast("הועתק ללוח!");
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.style.opacity = '1';
-            setTimeout(() => toast.style.opacity = '0', 2000);
-        }
-
-        // ===== ממיר שעות =====
-        // יום גרגוריאני = 86400 שניות
-        // יום טטראיסטי = 10 שעות * 100 דקות * 100 שניות = 100,000 יחידות
-
-        let currentTimeTab = 'toTetra';
-
-        function setTimeTab(tab) {
-            currentTimeTab = tab;
-            document.getElementById('formToTetra').classList.toggle('hidden', tab !== 'toTetra');
-            document.getElementById('formToGreg').classList.toggle('hidden', tab !== 'toGreg');
-            document.getElementById('tabToTetra').className = `flex-1 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'toTetra' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`;
-            document.getElementById('tabToGreg').className = `flex-1 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'toGreg' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`;
-            document.getElementById('timeResult').innerText = 'הכנס שעה';
-            document.getElementById('timeResultLabel').innerText = tab === 'toTetra' ? 'שעה טטראיסטית' : 'שעה רגילה';
-        }
-
-        function convertGregToTetra() {
-            const h = parseInt(document.getElementById('gregHour').value);
-            const m = parseInt(document.getElementById('gregMin').value);
-            const s = parseInt(document.getElementById('gregSec').value);
-            if (isNaN(h) && isNaN(m) && isNaN(s)) { document.getElementById('timeResult').innerText = 'הכנס שעה'; return; }
-            const fH = isNaN(h) ? 0 : Math.min(Math.max(h, 0), 23);
-            const fM = isNaN(m) ? 0 : Math.min(Math.max(m, 0), 59);
-            const fS = isNaN(s) ? 0 : Math.min(Math.max(s, 0), 59);
-            const totalGregSec = fH * 3600 + fM * 60 + fS;
-            const t = gregSecsToTetra(totalGregSec);
-            document.getElementById('timeResult').innerText = `${t.h}:${pad(t.m)}:${pad(t.s)}`;
-            document.getElementById('timeResultLabel').innerText = 'שעה טטראיסטית';
-        }
-
-        function convertTetraToGreg() {
-            const h = parseInt(document.getElementById('tetraHour').value);
-            const m = parseInt(document.getElementById('tetraMin').value);
-            const s = parseInt(document.getElementById('tetraSec').value);
-            if (isNaN(h) && isNaN(m) && isNaN(s)) { document.getElementById('timeResult').innerText = 'הכנס שעה'; return; }
-            const fH = isNaN(h) ? 0 : Math.min(Math.max(h, 0), 9);
-            const fM = isNaN(m) ? 0 : Math.min(Math.max(m, 0), 99);
-            const fS = isNaN(s) ? 0 : Math.min(Math.max(s, 0), 99);
-            const totalTetra = fH * 10000 + fM * 100 + fS;
-            const g = tetraUnitsToGreg(totalTetra);
-            document.getElementById('timeResult').innerText = `${pad(g.h)}:${pad(g.m)}:${pad(g.s)}`;
-            document.getElementById('timeResultLabel').innerText = 'שעה רגילה (גרגוריאנית)';
-        }
-
-        function useCurrentTime() {
-            const now = new Date();
-            setTimeTab('toTetra');
-            document.getElementById('gregHour').value = now.getHours();
-            document.getElementById('gregMin').value = now.getMinutes();
-            document.getElementById('gregSec').value = now.getSeconds();
-            convertGregToTetra();
-        }
-
-        // ===== ממיר תאריך טטרה ← גרגוריאני =====
-        function convertTetraDateToGreg() {
-            const tDay   = parseInt(document.getElementById('tDateDay').value);
-            const tMonth = parseInt(document.getElementById('tDateMonth').value);
-            const tYear  = parseInt(document.getElementById('tDateYear').value);
-            const el = document.getElementById('dateConvertResult');
-
-            if (isNaN(tDay) || isNaN(tMonth) || isNaN(tYear)) { el.innerText = 'הכנס תאריך'; return; }
-            if (tMonth < 1 || tMonth > 12 || tDay < 1 || tDay > 30) { el.innerText = 'תאריך לא תקין'; return; }
-
-            // חשב מספר ימים מאז ה-epoch (1 בינואר 0 = יום 0 בטטרה 10000)
-            const epochTetraAbs = getAbsoluteDays(CONFIG.epoch.gD, CONFIG.epoch.gM, CONFIG.epoch.gY);
-
-            // כמה ימים עברו מה-epoch הטטרה עד לתאריך הזה?
-            let daysDiff = 0;
-            // לספור שנים מלאות מ-epoch.tY עד tYear
-            let y = CONFIG.epoch.tY;
-            if (tYear > y) {
-                while (y < tYear) { daysDiff += isLeapYear(y) ? 366 : 365; y++; }
-            } else if (tYear < y) {
-                while (y > tYear) { y--; daysDiff -= isLeapYear(y) ? 366 : 365; }
-            }
-            // להוסיף ימים בתוך השנה (חודשים מלאים + יום)
-            daysDiff += (tMonth - 1) * 30 + (tDay - 1);
-            // להחסיר את ה-offset של ה-epoch הטטרה (epoch.tM=1, epoch.tD=1 = offset 0)
-            daysDiff -= ((CONFIG.epoch.tM - 1) * 30 + (CONFIG.epoch.tD - 1));
-
-            // תאריך גרגוריאני מתוך julianDay
-            const julianDay = epochTetraAbs + daysDiff;
-            // המרת julianDay לתאריך גרגוריאני
-            const gDate = julianToGregorian(julianDay);
-            const gregMonths = CONFIG.gregMonths;
-            el.innerText = `${gDate.d} ב${gregMonths[gDate.m - 1]}, ${gDate.y}`;
-        }
-
-        window.onload = () => {
-            renderCalendar();
-            renderStorage();
-            // הגדרת תאריך היום ב-picker כברירת מחדל
-            const today = new Date();
-            const formattedToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-            document.getElementById('datePicker').value = formattedToday;
-        };
-    </script>
+/* ====== Start ====== */
+loadConfig();
+</script>
 </body>
 </html>

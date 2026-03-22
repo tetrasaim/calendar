@@ -1,0 +1,28 @@
+{
+  "tetra": {
+    "yearOffset": 10000,
+    "hoursPerDay": 10,
+    "minutesPerHour": 100,
+    "secondsPerMinute": 100,
+    "unitsPerDay": 100000
+  },
+  "gregorian": {
+    "secondsPerDay": 86400
+  },
+  "julian": {
+    "yearMultiplier": 365.25,
+    "monthMultiplier": 30.6001,
+    "epochYear": 4716,
+    "correction": 1524.5,
+    "gregorianCutoff": 2299161,
+    "alphaOffset": 1867216.25,
+    "alphaDivisor": 36524.25,
+    "bCorrection": 1524,
+    "cOffset": 122.1
+  },
+  "leapYear": {
+    "div4": 4,
+    "div100": 100,
+    "div400": 400
+  }
+}
