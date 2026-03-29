@@ -1,45 +1,61 @@
 /**
  * logic.js — Tetraism shared date & time logic
- * Used by both: index.html (main calendar) and converter/index.html
+ * Used by: index.html (main calendar), conventor.html, and any future consumer.
  *
- * All functions are pure: no DOM access, no config assumptions.
- * Callers are responsible for passing the right epoch/config values.
+ * ★ Zero hardcoded data. Every constant lives in logic.json.
+ *   Change logic.json → every page that includes this file updates automatically.
  *
- * Static data (months, epoch, holidays…) lives in logic.json.
- * Call loadTetraConfig() once at startup; all data is available
- * on the resolved object and cached in window.TETRA_CONFIG.
+ * Usage (any page):
+ *   <script src="logic.js"></script>
+ *   <script>
+ *     loadTetraConfig().then(cfg => {
+ *       // cfg.epoch, cfg.tetraMonths, cfg.gregMonths, cfg.historicalHolidays …
+ *       // pure helpers (getAbsoluteDays, isLeapYear …) are available globally
+ *     });
+ *   </script>
  */
 
-/* ─── Static data loader ─────────────────────────────────────────── */
+/* ─── Config loader ──────────────────────────────────────────────── */
 
 /**
- * Fetches logic.json and caches the result in window.TETRA_CONFIG.
- * Returns a Promise that resolves to the config object.
- * Safe to call multiple times — subsequent calls return the cache.
+ * Fetches logic.json (relative to the page) and caches the result in
+ * window.TETRA_CONFIG.  Safe to call multiple times — subsequent calls
+ * return the cache immediately.
+ *
+ * The resolved object exposes every field in logic.json directly, plus
+ * two convenience helpers derived from the data:
+ *   cfg.historicalExtraHolidaysSet  — Set of extra-day indices that are holidays
+ *   cfg.tetraYearOffset             — numeric offset (epoch.tY − epoch.gY)
  *
  * @returns {Promise<Object>}
  */
 function loadTetraConfig() {
     if (window.TETRA_CONFIG) return Promise.resolve(window.TETRA_CONFIG);
+
     return fetch('logic.json')
         .then(r => {
             if (!r.ok) throw new Error(`logic.json not found (${r.status})`);
             return r.json();
         })
         .then(data => {
+            /* Derived conveniences so callers never recompute them */
+            data.historicalExtraHolidaysSet = new Set(data.historicalExtraHolidays);
+            data.tetraYearOffset = data.epoch.tY - data.epoch.gY;   /* typically 10000 */
             window.TETRA_CONFIG = data;
             return data;
         });
 }
 
-/* ─── Pure date / time functions ─────────────────────────────────── */
+/* ─── Pure math helpers (no data, no DOM) ───────────────────────── */
 
 /**
- * Returns the Julian Day Number for a Gregorian date.
+ * Julian Day Number for a Gregorian (or proleptic-Gregorian) date.
  * Uses the Fliegel–Van Flandern formula.
+ *
  * @param {number} d  day of month
  * @param {number} m  month (1–12)
- * @param {number} y  year (can be negative / BCE)
+ * @param {number} y  full year (can be 0 or negative / BCE)
+ * @returns {number}  Julian Day Number (may be fractional; treat as integer for day-counting)
  */
 function getAbsoluteDays(d, m, y) {
     let year = y, month = m;
@@ -50,18 +66,9 @@ function getAbsoluteDays(d, m, y) {
 }
 
 /**
- * Returns whether a Tetra year is a leap year.
- * A Tetra year maps to Gregorian by: gregYear = tetraYear - 10000
- * @param {number} tetraYear  e.g. 12026
- */
-function isLeapYear(tetraYear) {
-    const gY = tetraYear - 10000;
-    return (gY % 4 === 0 && gY % 100 !== 0) || (gY % 400 === 0);
-}
-
-/**
  * Converts a Julian Day Number back to a Gregorian {d, m, y} object.
- * Standard algorithm (handles both Julian and Gregorian calendars).
+ * Standard algorithm — handles both Julian and Gregorian calendars.
+ *
  * @param {number} jd  Julian Day Number
  * @returns {{ d: number, m: number, y: number }}
  */
@@ -86,27 +93,59 @@ function julianToGregorian(jd) {
 }
 
 /**
- * Converts regular (Gregorian) seconds-in-day to Tetra time components.
- * Tetra day = 10 hours × 100 minutes × 100 seconds = 100,000 units
- * @param {number} totalGregSec  seconds since midnight (0–86399)
+ * Returns whether a Tetra year is a leap year.
+ *
+ * The mapping tetraYear → Gregorian year is determined by the epoch offset
+ * stored in logic.json (epoch.tY − epoch.gY, typically 10000).
+ * If the config is not yet loaded the function falls back to the standard offset.
+ *
+ * @param {number} tetraYear  e.g. 12026
+ * @returns {boolean}
+ */
+function isLeapYear(tetraYear) {
+    const offset = (window.TETRA_CONFIG)
+        ? window.TETRA_CONFIG.tetraYearOffset
+        : 10000;                       /* safe fallback — matches default logic.json */
+    const gY = tetraYear - offset;
+    return (gY % 4 === 0 && gY % 100 !== 0) || (gY % 400 === 0);
+}
+
+/**
+ * Converts regular (Gregorian) seconds-since-midnight to Tetra time components.
+ *
+ * Tetra day = tetraHoursPerDay × tetraMinutesPerHour × tetraSecondsPerMinute units.
+ * All three constants come from logic.json → time.
+ *
+ * @param {number} totalGregSec  seconds since midnight (0 – 86 399)
  * @returns {{ h: number, m: number, s: number }}
  */
 function gregSecsToTetra(totalGregSec) {
-    const totalTetra = Math.round(totalGregSec * 100000 / 86400);
+    const t = (window.TETRA_CONFIG) ? window.TETRA_CONFIG.time : null;
+    const gregPerDay  = t ? t.gregSecondsPerDay  : 86400;
+    const tetraPerDay = t ? t.tetraUnitsPerDay   : 100000;
+    const mPerH       = t ? t.tetraMinutesPerHour : 100;
+    const sPerM       = t ? t.tetraSecondsPerMinute : 100;
+
+    const totalTetra = Math.round(totalGregSec * tetraPerDay / gregPerDay);
     return {
-        h: Math.floor(totalTetra / 10000),
-        m: Math.floor((totalTetra % 10000) / 100),
-        s: totalTetra % 100
+        h: Math.floor(totalTetra / (mPerH * sPerM)),
+        m: Math.floor((totalTetra % (mPerH * sPerM)) / sPerM),
+        s: totalTetra % sPerM
     };
 }
 
 /**
  * Converts Tetra time units back to regular (Gregorian) time.
- * @param {number} totalTetra  Tetra units since midnight (0–99999)
+ *
+ * @param {number} totalTetra  Tetra units since midnight (0 – tetraUnitsPerDay-1)
  * @returns {{ h: number, m: number, s: number }}
  */
 function tetraUnitsToGreg(totalTetra) {
-    const totalGregSec = Math.round(totalTetra * 86400 / 100000);
+    const t = (window.TETRA_CONFIG) ? window.TETRA_CONFIG.time : null;
+    const gregPerDay  = t ? t.gregSecondsPerDay  : 86400;
+    const tetraPerDay = t ? t.tetraUnitsPerDay   : 100000;
+
+    const totalGregSec = Math.round(totalTetra * gregPerDay / tetraPerDay);
     return {
         h: Math.floor(totalGregSec / 3600),
         m: Math.floor((totalGregSec % 3600) / 60),
@@ -116,8 +155,10 @@ function tetraUnitsToGreg(totalTetra) {
 
 /**
  * Zero-pads a number to the given length.
+ *
  * @param {number} n
  * @param {number} [len=2]
+ * @returns {string}
  */
 function pad(n, len = 2) {
     return String(n).padStart(len, '0');
