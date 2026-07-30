@@ -1647,7 +1647,7 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 const syncAbs  = getAbsoluteDays(config.sync.gDay, config.sync.gMonth, config.sync.gYear);
                 const diffInDays = todayAbs - syncAbs;
 
-                let remainingDays = diffInDays + ((config.sync.tMonth - 1) * 30) + (config.sync.tDay - 1);
+                let remainingDays = diffInDays + ((config.sync.tMonth - 1) * 24) + (config.sync.tDay - 1);
                 let year = config.sync.tYear;
 
                 if (remainingDays >= 0) {
@@ -1664,8 +1664,8 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 }
 
                 if (remainingDays < 360) {
-                    const mIdx = Math.floor(remainingDays / 30);
-                    const d    = (remainingDays % 30) + 1;
+                    const mIdx = Math.floor(remainingDays / 24);
+                    const d    = (remainingDays % 24) + 1;
                     return { key: `${year}-${mIdx}-${d}`, day: d, month: getMonthName(mIdx), year, isExtra: false };
                 }
                 const extraIdx = remainingDays - 360;
@@ -1803,10 +1803,10 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                     });
                     html += `</div><div class="calendar-grid">`;
 
-                    for (let d = 1; d <= 30; d++) {
+                    for (let d = 1; d <= 24; d++) {
                         const key          = `${currentYear}-${mIdx}-${d}`;
                         const isToday      = key === todayKey;
-                        const dayOfWeek    = ((d - 1) % 6) + 1;
+                        const dayOfWeek    = ((d - 1) % 12) + 1;
                         const isHoliday    = config.holidays.includes(dayOfWeek);
                         const isHistorical = cfg.historicalHolidays.some(h => h.mIdx === mIdx && h.day === d);
                         const hasTasks     = savedData[key] && Object.keys(savedData[key]).length > 0;

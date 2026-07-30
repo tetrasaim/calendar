@@ -179,13 +179,13 @@
 
                 <div class="flex gap-2 mb-3">
                     <div class="flex-1">
-                        <label class="text-[10px] text-slate-400 font-bold block mb-1">יום (1-30)</label>
-                        <input id="tDateDay" type="number" min="1" max="30" placeholder="1" oninput="convertTetraDateToGreg()"
+                        <label class="text-[10px] text-slate-400 font-bold block mb-1">יום (1-24)</label>
+                        <input id="tDateDay" type="number" min="1" max="24" placeholder="1" oninput="convertTetraDateToGreg()"
                             class="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl text-lg font-bold text-center outline-none transition-all">
                     </div>
                     <div class="flex-1">
-                        <label class="text-[10px] text-slate-400 font-bold block mb-1">חודש (1-12)</label>
-                        <input id="tDateMonth" type="number" min="1" max="12" placeholder="1" oninput="convertTetraDateToGreg()"
+                        <label class="text-[10px] text-slate-400 font-bold block mb-1">חודש (1-15)</label>
+                        <input id="tDateMonth" type="number" min="1" max="15" placeholder="1" oninput="convertTetraDateToGreg()"
                             class="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-indigo-400 rounded-2xl text-lg font-bold text-center outline-none transition-all">
                     </div>
                     <div class="flex-1">
@@ -287,7 +287,7 @@
             function convertToTetra(date) {
                 const targetAbs = getAbsoluteDays(date.getDate(), date.getMonth() + 1, date.getFullYear());
                 const syncAbs   = getAbsoluteDays(cfg.epoch.gD, cfg.epoch.gM, cfg.epoch.gY);
-                let diff = (targetAbs - syncAbs) + ((cfg.epoch.tM - 1) * 30) + (cfg.epoch.tD - 1);
+                let diff = (targetAbs - syncAbs) + ((cfg.epoch.tM - 1) * 24) + (cfg.epoch.tD - 1);
                 let y    = cfg.epoch.tY;
 
                 if (diff >= 0) {
@@ -300,8 +300,8 @@
                 }
 
                 if (diff < 360) {
-                    const mIdx = Math.floor(diff / 30);
-                    const d    = (diff % 30) + 1;
+                    const mIdx = Math.floor(diff / 24);
+                    const d    = (diff % 24) + 1;
                     return `${d} ב${cfg.tetraMonths[mIdx]}, ${y}`;
                 }
                 const extraIdx = diff - 360;
@@ -512,7 +512,7 @@
                 const el     = document.getElementById('dateConvertResult');
 
                 if (isNaN(tDay) || isNaN(tMonth) || isNaN(tYear)) { el.innerText = 'הכנס תאריך'; return; }
-                if (tMonth < 1 || tMonth > 12 || tDay < 1 || tDay > 30) { el.innerText = 'תאריך לא תקין'; return; }
+                if (tMonth < 1 || tMonth > 15 || tDay < 1 || tDay > 24) { el.innerText = 'תאריך לא תקין'; return; }
 
                 const epochAbs = getAbsoluteDays(cfg.epoch.gD, cfg.epoch.gM, cfg.epoch.gY);
                 let daysDiff   = 0;
@@ -521,8 +521,8 @@
                 if (tYear > y)      { while (y < tYear) { daysDiff += isLeapYear(y) ? 366 : 365; y++; } }
                 else if (tYear < y) { while (y > tYear) { y--; daysDiff -= isLeapYear(y) ? 366 : 365; } }
 
-                daysDiff += (tMonth - 1) * 30 + (tDay - 1);
-                daysDiff -= (cfg.epoch.tM - 1) * 30 + (cfg.epoch.tD - 1);
+                daysDiff += (tMonth - 1) * 24 + (tDay - 1);
+                daysDiff -= (cfg.epoch.tM - 1) * 24 + (cfg.epoch.tD - 1);
 
                 const gDate = julianToGregorian(epochAbs + daysDiff);
                 el.innerText = `${gDate.d} ב${cfg.gregMonths[gDate.m - 1]}, ${gDate.y}`;
