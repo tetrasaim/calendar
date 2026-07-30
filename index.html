@@ -1634,6 +1634,11 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             if (!config.sync)                config.sync    = { ...DEFAULTS.sync };
             if (config.manesis === undefined) config.manesis = cfg.defaultManesis;
 
+            // אם המשתמש לא שינה ידנית את נקודת הסנכרון, תמיד עדכן אותה
+            // לפי epoch הנוכחי מ-logic.json (כדי שעדכון epoch לא יישאר תקוע
+            // מאחורי סנכרון ישן ששמור ב-localStorage).
+            if (!config.customSync) config.sync = { ...DEFAULTS.sync };
+
             function getMonthName(mIdx) {
                 return config.manesis ? cfg.manesiNames[mIdx] : config.months[mIdx];
             }
@@ -1718,6 +1723,7 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                     tMonth: parseInt(document.getElementById('syncTetraMonth').value) || 1,
                     tYear:  parseInt(document.getElementById('syncTetraYear').value)  || cfg.epoch.tY
                 };
+                config.customSync = true;
                 saveAndRefresh();
             }
 
